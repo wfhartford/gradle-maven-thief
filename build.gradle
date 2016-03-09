@@ -1,0 +1,66 @@
+plugins {
+  id 'groovy'
+  id 'maven-publish'
+  id 'com.jfrog.bintray' version '1.6'
+  id 'com.jfrog.artifactory' version '4.0.0'
+}
+
+repositories {
+  jcenter()
+}
+
+dependencies {
+  compile gradleApi()
+  compile localGroovy()
+}
+
+group = 'ca.cutterslade.gradle'
+version = '1.0.0-SNAPSHOT'
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+publishing {
+  publications {
+    mavenJava(MavenPublication) {
+      from components.java
+    }
+  }
+
+  repositories {
+    maven {
+      url "$buildDir/repo"
+    }
+  }
+}
+
+if (this.hasProperty('bintrayUser') && this.hasProperty('bintrayApiKey')) bintray {
+  user = bintrayUser
+  key = bintrayApiKey
+  publications = ['mavenJava']
+  pkg {
+    repo = 'maven'
+    name = project.name
+    desc = 'Dependency analysis plugin for gradle'
+    websiteUrl = 'https://github.com/wfhartford/gradle-maven-thief'
+    issueTrackerUrl = 'https://github.com/wfhartford/gradle-maven-thief/issues'
+    vcsUrl = 'https://github.com/wfhartford/gradle-maven-thief.git'
+  }
+}
+
+if (this.hasProperty('jfrogUser') && this.hasProperty('jfrogPassword')) artifactory {
+  contextUrl = 'http://oss.jfrog.org/artifactory'
+  publish {
+    repository {
+      repoKey = 'oss-snapshot-local'
+      username = jfrogUser
+      password = jfrogPassword
+      maven = true
+    }
+    defaults {
+      publications ('mavenJava')
+    }
+  }
+}
+
+tasks.withType(PublishToMavenRepository) {it.dependsOn check}
