@@ -1,6 +1,7 @@
 # gradle-maven-thief
 
 [ ![Download](https://api.bintray.com/packages/wesley/maven/gradle-maven-thief/images/download.svg) ](https://bintray.com/wesley/maven/gradle-maven-thief/_latestVersion)
+[![Build Status](https://travis-ci.org/wfhartford/gradle-maven-thief.svg?branch=master)](https://travis-ci.org/wfhartford/gradle-maven-thief)
 
 Gradle plugin which steals project information from pom.xml files.
 
