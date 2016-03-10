@@ -20,10 +20,22 @@ version = '1.0.2-SNAPSHOT'
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
+task sourcesJar(type: Jar, dependsOn: classes) {
+  classifier = 'sources'
+  from sourceSets.main.allSource
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+  classifier = 'javadoc'
+  from javadoc.destinationDir
+}
+
 publishing {
   publications {
     mavenJava(MavenPublication) {
       from components.java
+      artifact javadocJar {classifier 'javadoc'}
+      artifact sourcesJar {classifier 'sources'}
     }
   }
 
