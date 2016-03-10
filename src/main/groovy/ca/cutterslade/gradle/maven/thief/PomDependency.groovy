@@ -44,18 +44,9 @@ class PomDependency {
   }
 
   Dependency getGradleDependency(Project project) {
-    def projectDep = project.rootProject.allprojects.findAll {
-      it.group == groupId && it.name == artifactId && it.version == version
-    }
-    if (1 < projectDep.size()) {
-      throw new RuntimeException("Found more than one project satisfying $this")
-    }
-    projectDep ? project.dependencies.project(path: projectDep.first().path) :
-        project.dependencies.create("$groupId:$artifactId:$version", {
-          exclusions.each {
-            exclude(group: it.groupId, module: it.artifactId)
-          }
-        })
+    project.dependencies.create("$groupId:$artifactId:$version", {
+      exclusions.each { exclude(group: it.groupId, module: it.artifactId) }
+    })
   }
 
   Configuration getGradleConfiguration(Project project) {

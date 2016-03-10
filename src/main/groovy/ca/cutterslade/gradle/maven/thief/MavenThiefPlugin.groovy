@@ -9,15 +9,32 @@ class MavenThiefPlugin implements Plugin<Project> {
     project.apply plugin: 'java'
     project.apply plugin: 'provided-base'
 
-    def pomHandler = new PomHandler(project, project.file('pom.xml'))
-    pomHandler.dependencies.values().each {PomDependency dep ->
+    def pomHandler = PomHandler.of(project.file('pom.xml'))
+
+    pomHandler.dependencies.values().each { PomDependency dep ->
       dep.getGradleConfiguration(project).dependencies.add(dep.getGradleDependency(project))
     }
     project.group = pomHandler.groupId
     project.version = pomHandler.version
-    project.sourceSets.main.java.srcDirs = [pomHandler.mainSourceDirectory]
-    project.sourceSets.main.resources.srcDirs = [pomHandler.mainResourceDirectory]
-    project.sourceSets.test.java.srcDirs = [pomHandler.testSourceDirectory]
-    project.sourceSets.test.resources.srcDirs = [pomHandler.testResourceDirectory]
+    boolean dontModifySourceSets =
+        project.hasProperty('maven-thief.dontModifySourceSets') &&
+            Boolean.parseBoolean(project.property('maven-thief.dontModifySourceSets'))
+    if (!dontModifySourceSets) {
+      project.sourceSets.main.java.srcDirs = [pomHandler.mainSourceDirectory]
+      project.sourceSets.main.resources.srcDirs = [pomHandler.mainResourceDirectory]
+      project.sourceSets.test.java.srcDirs = [pomHandler.testSourceDirectory]
+      project.sourceSets.test.resources.srcDirs = [pomHandler.testResourceDirectory]
+    }
+
+    project.configurations.each {
+      it.resolutionStrategy {
+        dependencySubstitution {
+          project.rootProject.getSubprojects().each { subProject ->
+            def handler = PomHandler.of(subProject.file('pom.xml'))
+            substitute module("$handler.groupId:$subProject.name") with delegate.project(subProject.path)
+          }
+        }
+      }
+    }
   }
 }

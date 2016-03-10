@@ -1,14 +1,13 @@
 package ca.cutterslade.gradle.maven.thief
 
 import groovy.util.slurpersupport.GPathResult
-import org.gradle.api.Project
 
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 
 class PomHandler {
   private static final Pattern PROPERTY_SEARCH = Pattern.compile('\\$\\{(.+)}')
-  private final Project project
+  private static final Map<File, PomHandler> INSTANCES = [:]
   private final File pomFile
   private GPathResult rootNode
   private PomHandler parentPom
@@ -16,8 +15,16 @@ class PomHandler {
   private Map<PomDependency, PomDependency> pomDependencyManagement
   private Map<PomDependency, PomDependency> pomDependencies
 
-  PomHandler(Project project, File pomFile) {
-    this.project = project
+  static PomHandler of(File pomFile) {
+    def handler = INSTANCES.get(pomFile)
+    if (!handler) {
+      handler = new PomHandler(pomFile)
+      INSTANCES.put(pomFile, handler)
+    }
+    return handler
+  }
+
+  private PomHandler(File pomFile) {
     this.pomFile = pomFile
     rootNode = new XmlSlurper().parse(pomFile)
     def parentNode = rootNode.parent
@@ -25,7 +32,7 @@ class PomHandler {
       def relativePathNode = parentNode.relativePath
       if (relativePathNode && relativePathNode.text()) {
         def parentPomFile = new File(pomFile.parentFile, relativePathNode.text())
-        parentPom = new PomHandler(project, parentPomFile)
+        parentPom = of(parentPomFile)
       }
     }
   }
@@ -79,10 +86,6 @@ class PomHandler {
         properties = fixedProperties
         fixedProperties = fixProperties(properties)
       }
-      def unreplaced = properties.findAll {key, value -> PROPERTY_SEARCH.matcher(value).find()}
-      if (unreplaced) {
-        project.logger.warn "WARNING: Unreplaced property values: $unreplaced"
-      }
       pomProperties = properties
     }
     pomProperties
@@ -102,7 +105,6 @@ class PomHandler {
       Map<PomDependency, PomDependency> dependencies = parentPom ? parentPom.dependencies : [:]
       GPathResult dependenciesNode = rootNode.dependencies
       pomDependencies = parseDependencies(dependenciesNode, dependencies, getDependencyManagement())
-      project.logger.info("Pom file $pomFile has dependencies $pomDependencies")
     }
     return pomDependencies
   }
