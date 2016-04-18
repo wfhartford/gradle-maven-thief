@@ -30,8 +30,11 @@ class MavenThiefPlugin implements Plugin<Project> {
       it.resolutionStrategy {
         dependencySubstitution {
           project.rootProject.getSubprojects().each { subProject ->
-            def handler = PomHandler.of(subProject.file('pom.xml'))
-            substitute module("$handler.groupId:$subProject.name") with delegate.project(subProject.path)
+            def pomFile = subProject.file('pom.xml')
+            if (pomFile.file) {
+              def handler = PomHandler.of(pomFile)
+              substitute module("$handler.groupId:$subProject.name") with delegate.project(subProject.path)
+            }
           }
         }
       }
