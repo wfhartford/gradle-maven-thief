@@ -131,7 +131,8 @@ class PomHandler {
   Set<PomDependency> parseExclusions(final GPathResult dependencyNode) {
     dependencyNode.exclusions ? dependencyNode.exclusions.children().collect {GPathResult exclusion ->
       new PomDependency(groupId: resolveProperties(exclusion.groupId.text()),
-          artifactId: resolveProperties(exclusion.artifactId.text()))
+          artifactId: resolveProperties(exclusion.artifactId.text()),
+          classifier: exclusion.classifier ? resolveProperties(exclusion.classifier.text()) : null)
     } : []
   }
 

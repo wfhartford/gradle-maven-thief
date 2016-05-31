@@ -22,6 +22,7 @@ class PomDependency {
   String groupId
   String artifactId
   String version
+  String classifier
   Scope scope
   Set<PomDependency> exclusions
 
@@ -31,20 +32,20 @@ class PomDependency {
     def depMan = dependencyManagement[asKey()]
     null == depMan || (depMan.version == version && depMan.scope == scope) ? this :
         new PomDependency(groupId: groupId, artifactId: artifactId,
-            version: version ?: depMan.version, scope: scope ?: depMan.scope,
+            version: version ?: depMan.version, classifier: classifier, scope: scope ?: depMan.scope,
             exclusions: depMan.exclusions ? depMan.exclusions + exclusions : exclusions)
   }
 
   PomDependency asKey() {
     if (!keyDep) {
       keyDep = null == version && null == scope && null == exclusions ? this :
-          new PomDependency(groupId: groupId, artifactId: artifactId)
+          new PomDependency(groupId: groupId, artifactId: artifactId, classifier: classifier)
     }
     return keyDep
   }
 
   Dependency getGradleDependency(Project project) {
-    project.dependencies.create("$groupId:$artifactId:$version", {
+    project.dependencies.create("$groupId:$artifactId:$version${classifier ? ":$classifier" : ''}", {
       exclusions.each { exclude(group: it.groupId, module: it.artifactId) }
     })
   }
