@@ -115,12 +115,14 @@ class PomHandler {
     dependencies.putAll(dependenciesNode.children().collectEntries {GPathResult dependency ->
       String groupId = dependency.groupId.text()
       String artifactId = dependency.artifactId.text()
+      String classifier = dependency.classifier ? dependency.classifier.text() : null
       String version = dependency.version ? dependency.version.text() : null
       String scope = dependency.scope ? dependency.scope.text() : null
       def dep = new PomDependency(
           groupId: resolveProperties(groupId),
           artifactId: resolveProperties(artifactId),
           version: resolveProperties(version),
+          classifier: resolveProperties(classifier),
           scope: PomDependency.Scope.of(resolveProperties(scope)),
           exclusions: parseExclusions(dependency))
       [(dep.asKey()): dep.withManagement(dependencyManagement)]
@@ -131,7 +133,8 @@ class PomHandler {
   Set<PomDependency> parseExclusions(final GPathResult dependencyNode) {
     dependencyNode.exclusions ? dependencyNode.exclusions.children().collect {GPathResult exclusion ->
       new PomDependency(groupId: resolveProperties(exclusion.groupId.text()),
-          artifactId: resolveProperties(exclusion.artifactId.text()))
+          artifactId: resolveProperties(exclusion.artifactId.text()),
+          classifier: exclusion.classifier ? resolveProperties(exclusion.classifier.text()) : null)
     } : []
   }
 
