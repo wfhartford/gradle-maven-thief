@@ -8,6 +8,8 @@ Gradle plugin which steals project information from pom.xml files.
 This plugin attempts to parse Maven pom.xml files in the project directory and apply the project settings to the gradle
 build. It does not add any tasks to the project, but is executed only in the configuration phase.
 
+This plugin works in the configuration phase of the build, and applies the dependency information from Maven pom.xml files to the current build. This differs from the built-in gradle init plugin, which can generate build.gradle files for a project based on the Maven pom.xml files. The init plugin is intended to assist in the transition from Maven to Gradle. The Thief plugin is intended to facilitate use of Maven and Gradle in parallel by reducing the amount of duplicate configuration required.
+
 ## Goal
 The goal of this plugin is to allow parallel development using Maven and Gradle. Why on earth would someone want to do
 that? I certainly wouldn't recommend it in most cases, though it can be quite useful in a few rare situations such as:
