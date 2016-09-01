@@ -23,7 +23,9 @@ class PomDependency {
   String artifactId
   String version
   String classifier
+  String type
   Scope scope
+
   Set<PomDependency> exclusions
 
   private PomDependency keyDep
@@ -32,7 +34,7 @@ class PomDependency {
     def depMan = dependencyManagement[asKey()]
     null == depMan || (depMan.version == version && depMan.scope == scope) ? this :
         new PomDependency(groupId: groupId, artifactId: artifactId,
-            version: version ?: depMan.version, classifier: classifier, scope: scope ?: depMan.scope,
+            version: version ?: depMan.version, type: type?: depMan.type, classifier: classifier, scope: scope ?: depMan.scope,
             exclusions: depMan.exclusions ? depMan.exclusions + exclusions : exclusions)
   }
 
@@ -45,9 +47,18 @@ class PomDependency {
   }
 
   Dependency getGradleDependency(Project project) {
-    project.dependencies.create("$groupId:$artifactId:$version${classifier ? ":$classifier" : ''}", {
-      exclusions.each { exclude(group: it.groupId, module: it.artifactId) }
-    })
+    if ("jar".equals(type)) {
+      String groovyDep = "$groupId:$artifactId:$version${classifier ? ":$classifier" : ''}"
+      project.dependencies.create(groovyDep, {
+        exclusions.each { exclude(group: it.groupId, module: it.artifactId) }
+      })
+    }
+    else {
+      String groovyDep = "$groupId:$artifactId:$version${classifier ? ":$classifier" : ''}@$type"
+      project.dependencies.create(groovyDep, {
+        exclusions.each { exclude(group: it.groupId, module: it.artifactId) }
+      })
+    }
   }
 
   Configuration getGradleConfiguration(Project project) {

@@ -117,6 +117,8 @@ class PomHandler {
       String artifactId = dependency.artifactId.text()
       String classifier = dependency.classifier ? dependency.classifier.text() : null
       String version = dependency.version ? dependency.version.text() : null
+      String type = dependency.type && !dependency.type.text().isEmpty() ? dependency.type.text() : "jar"
+
       String scope = dependency.scope ? dependency.scope.text() : null
       def dep = new PomDependency(
           groupId: resolveProperties(groupId),
@@ -124,9 +126,11 @@ class PomHandler {
           version: resolveProperties(version),
           classifier: resolveProperties(classifier),
           scope: PomDependency.Scope.of(resolveProperties(scope)),
+          type: resolveProperties(type),
           exclusions: parseExclusions(dependency))
       [(dep.asKey()): dep.withManagement(dependencyManagement)]
     })
+
     dependencies
   }
 
