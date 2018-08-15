@@ -2,37 +2,39 @@ package ca.cutterslade.gradle.maven.thief
 
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
+import org.gradle.api.artifacts.Configuration
 
 class MavenThiefPlugin implements Plugin<Project> {
   @Override
   void apply(final Project project) {
-    final Logger slf4jLogger = LoggerFactory.getLogger('gradle-maven-thief')
     project.apply plugin: 'java'
     project.apply plugin: 'provided-base'
 
     def pomHandler = PomHandler.of(project.file('pom.xml'))
 
-    final Set<String> inclusions = []
+    final Set<PomDependency> dependenciesToBeExcluded = []
 
     pomHandler.dependencies.values().each { PomDependency dep ->
-      dep.getGradleConfiguration(project).dependencies.add(dep.getGradleDependency(project))
-      inclusions.add(groupArtifact(dep))
+      dep.exclusions.each {
+        if (it.scope == null || 'compile' == it.scope.gradleConfiguration) {
+          dependenciesToBeExcluded.add(it.asKey())
+        }
+      }
     }
 
     pomHandler.dependencies.values().each { PomDependency dep ->
-      project.configurations.each { configuration ->
-        dep.exclusions.each {
-          final String groupArtifact = groupArtifact(it)
-          if (!inclusions.contains(groupArtifact)) {
-            if (it.scope == null || 'compile' == it.scope.gradleConfiguration) {
-              slf4jLogger.info("MavenThiefPlugin: excluding ${it.groupId}:${it.artifactId} from ${project.name}")
-              configuration.exclude([group: it.groupId, module: it.artifactId])
-            }
-          }
-        }
+      dep.getGradleConfiguration(project).dependencies.add(dep.getGradleDependency(project))
+      if (dep.scope == null || 'compile' == dep.scope.gradleConfiguration) {
+        dependenciesToBeExcluded.remove(dep.asKey())
       }
+    }
+
+    final Configuration compileConfiguration = project.configurations.getByName('compile')
+
+    dependenciesToBeExcluded.each {
+      project.logger.info(
+          "MavenThiefPlugin: excluding ${it.groupId}:${it.artifactId}:${it.classifier} from ${project.name}")
+      compileConfiguration.exclude([group: it.groupId, module: it.artifactId])
     }
 
     project.group = pomHandler.groupId
@@ -60,9 +62,5 @@ class MavenThiefPlugin implements Plugin<Project> {
         }
       }
     }
-  }
-
-  private String groupArtifact(PomDependency dep) {
-    dep.groupId + ":" + dep.artifactId
   }
 }
