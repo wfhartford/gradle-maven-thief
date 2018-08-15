@@ -2,18 +2,39 @@ package ca.cutterslade.gradle.maven.thief
 
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 class MavenThiefPlugin implements Plugin<Project> {
   @Override
   void apply(final Project project) {
+    final Logger slf4jLogger = LoggerFactory.getLogger('gradle-maven-thief')
     project.apply plugin: 'java'
     project.apply plugin: 'provided-base'
 
     def pomHandler = PomHandler.of(project.file('pom.xml'))
 
+    final Set<String> inclusions = []
+
     pomHandler.dependencies.values().each { PomDependency dep ->
       dep.getGradleConfiguration(project).dependencies.add(dep.getGradleDependency(project))
+      inclusions.add(groupArtifact(dep))
     }
+
+    pomHandler.dependencies.values().each { PomDependency dep ->
+      project.configurations.each { configuration ->
+        dep.exclusions.each {
+          final String groupArtifact = groupArtifact(it)
+          if (!inclusions.contains(groupArtifact)) {
+            if (it.scope == null || 'compile' == it.scope.gradleConfiguration) {
+              slf4jLogger.info("MavenThiefPlugin: excluding ${it.groupId}:${it.artifactId} from ${project.name}")
+              configuration.exclude([group: it.groupId, module: it.artifactId])
+            }
+          }
+        }
+      }
+    }
+
     project.group = pomHandler.groupId
     project.version = pomHandler.version
     boolean dontModifySourceSets =
@@ -39,5 +60,9 @@ class MavenThiefPlugin implements Plugin<Project> {
         }
       }
     }
+  }
+
+  private String groupArtifact(PomDependency dep) {
+    dep.groupId + ":" + dep.artifactId
   }
 }
