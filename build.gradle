@@ -15,7 +15,7 @@ dependencies {
 }
 
 group = 'ca.cutterslade.gradle'
-version = '1.0.6'
+version = '1.0.7-SNAPSHOT'
 
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
